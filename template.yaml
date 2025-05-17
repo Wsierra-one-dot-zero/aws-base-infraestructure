@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Infraestructura completa para agente auto-hospedado de Azure Pipelines en AWS Free Tier'
+
+Parameters:
+  KeyPairName:
+    Description: 'Nombre del par de claves EC2 existente para conexión SSH'
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: 'Debe ser el nombre de un par de claves EC2 existente'
+
+Resources:
+  # 1. Creación de la VPC
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: '10.0.0.0/16'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: 'VPC-AzurePipelinesAgent'
+
+  # 2. Creación del Internet Gateway
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: 'IGW-AzurePipelinesAgent'
+
+  # 3. Asociación del IGW a la VPC
+  GatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # 4. Creación de la Subnet pública
+  PublicSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: '10.0.1.0/24'
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: 'PublicSubnet-AzurePipelinesAgent'
+
+  # 5. Creación de la tabla de rutas pública
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: 'PublicRouteTable'
+
+  # 6. Ruta por defecto hacia Internet
+  DefaultRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: GatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+
+  # 7. Asociación de la subnet pública con la tabla de rutas
+  SubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # 8. Grupo de seguridad para la instancia
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security Group para Azure Pipelines Agent'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: 'tcp'
+          FromPort: 22
+          ToPort: 22
+          CidrIp: '0.0.0.0/0'  # En producción, restringe esto a tu IP
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: '0.0.0.0/0'
+          Description: 'Permitir todo el tráfico saliente'
+
+  # 9. Instancia EC2 (Free Tier eligible)
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: 't2.micro'
+      ImageId: 'ami-0953476d60561c955'  # Amazon Linux 2023 en us-east-1
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: 'true'
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref InstanceSecurityGroup
+          SubnetId: !Ref PublicSubnet
+      BlockDeviceMappings:
+        - DeviceName: '/dev/xvda'
+          Ebs:
+            VolumeSize: 30 # 30 GiB - máximo del Free Tier
+            VolumeType: 'gp3' # General Purpose SSD
+            DeleteOnTermination: true
+      Tags:
+        - Key: 'Name'
+      
+
+Outputs:
+  InstancePublicDNS:
+    Description: 'DNS público de la instancia para conectarse via SSH'
+    Value: !GetAtt EC2Instance.PublicDnsName
+  InstancePublicIP:
+    Description: 'IP pública de la instancia'
+    Value: !GetAtt EC2Instance.PublicIp
+  VPCId:
+    Description: 'ID de la VPC creada'
+    Value: !Ref VPC
+  SubnetId:
+    Description: 'ID de la subred creada'
+    Value: !Ref PublicSubnet
+  SecurityGroupId:
+    Description: 'ID del grupo de seguridad'
+    Value: !GetAtt InstanceSecurityGroup.GroupId
+  ConnectionInstructions:
+    Description: 'Instrucciones para conectarse y configurar el agente'
+    Value: !Sub |
+      Conéctate via SSH: ssh -i ${KeyPairName}.pem ec2-user@${EC2Instance.PublicDnsName}
+      Las instrucciones completas están en /home/ec2-user/README.txt

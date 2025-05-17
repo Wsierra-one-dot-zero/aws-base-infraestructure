@@ -1,0 +1,51 @@
+name: Deploy with OIDC
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack-name:
+        description: "Nombre del stack para SAM Deploy"
+        required: true
+        default: "BasePlatform-stack"
+      region:
+        description: "Región de AWS"
+        required: true
+        default: "us-east-1"
+      KeyPairName:
+        description: "Nombre del par de claves EC2 existente para conexión SSH"
+        required: true
+        default: ""
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
+          aws-region: ${{ github.event.inputs.region }}
+
+      - name: Install SAM CLI
+        run: pip install aws-sam-cli
+
+      - name: Sam Build Project
+        run: sam build
+
+      - name: Sam Deploy Project
+        run: |
+          sam deploy \
+            --stack-name ${{ github.event.inputs['stack-name'] }} \
+            --region ${{ github.event.inputs.region }} \
+            --resolve-s3 \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides \
+              KeyPairName=${{ github.event.inputs['KeyPairName'] }}
+            --no-confirm-changeset
