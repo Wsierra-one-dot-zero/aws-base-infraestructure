@@ -15,6 +15,11 @@ on:
         description: "Nombre del par de claves EC2 existente para conexión SSH"
         required: true
         default: ""
+      MyIPAddress:
+        description: "Tu dirección IP pública (se pedirá al desplegar)"
+        required: true
+        default: ""
+        type: string
 
 permissions:
   id-token: write
@@ -47,5 +52,6 @@ jobs:
             --resolve-s3 \
             --capabilities CAPABILITY_IAM \
             --parameter-overrides \
-              KeyPairName=${{ github.event.inputs['KeyPairName'] }}
+              KeyPairName=${{ github.event.inputs['KeyPairName'] }} \
+              MyIPAddress=${{ github.event.inputs['MyIPAddress'] }} \
             --no-confirm-changeset
