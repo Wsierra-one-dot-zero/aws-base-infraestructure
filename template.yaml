@@ -108,6 +108,7 @@ Resources:
             DeleteOnTermination: true
       Tags:
         - Key: 'Name'
+          Value: 'AzurePipelinesAgent'
       
 
 Outputs:
