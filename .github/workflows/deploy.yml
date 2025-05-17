@@ -1,4 +1,4 @@
-name: Deploy with OIDC
+name: Deploy Infrastructure on AWS
 
 on:
   workflow_dispatch:
