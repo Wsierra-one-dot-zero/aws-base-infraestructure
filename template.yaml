@@ -3,12 +3,12 @@ Description: 'Infraestructura completa para agente auto-hospedado de Azure Pipel
 
 Parameters:
   KeyPairName:
-    Description: 'Nombre del par de claves EC2 existente para conexión SSH'
+    Description: 'Nombre del par de claves EC2 existente para conexion SSH'
     Type: 'AWS::EC2::KeyPair::KeyName'
     ConstraintDescription: 'Debe ser el nombre de un par de claves EC2 existente'
 
 Resources:
-  # 1. Creación de la VPC
+  # 1. Creacion de la VPC
   VPC:
     Type: 'AWS::EC2::VPC'
     Properties:
@@ -19,7 +19,7 @@ Resources:
         - Key: Name
           Value: 'VPC-AzurePipelinesAgent'
 
-  # 2. Creación del Internet Gateway
+  # 2. Creacion del Internet Gateway
   InternetGateway:
     Type: 'AWS::EC2::InternetGateway'
     Properties:
@@ -27,14 +27,14 @@ Resources:
         - Key: Name
           Value: 'IGW-AzurePipelinesAgent'
 
-  # 3. Asociación del IGW a la VPC
+  # 3. Asociacion del IGW a la VPC
   GatewayAttachment:
     Type: 'AWS::EC2::VPCGatewayAttachment'
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
 
-  # 4. Creación de la Subnet pública
+  # 4. Creacion de la Subnet pública
   PublicSubnet:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -46,7 +46,7 @@ Resources:
         - Key: Name
           Value: 'PublicSubnet-AzurePipelinesAgent'
 
-  # 5. Creación de la tabla de rutas pública
+  # 5. Creacion de la tabla de rutas pública
   PublicRouteTable:
     Type: 'AWS::EC2::RouteTable'
     Properties:
@@ -64,7 +64,7 @@ Resources:
       DestinationCidrBlock: '0.0.0.0/0'
       GatewayId: !Ref InternetGateway
 
-  # 7. Asociación de la subnet pública con la tabla de rutas
+  # 7. Asociacion de la subnet pública con la tabla de rutas
   SubnetRouteTableAssociation:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
@@ -81,11 +81,11 @@ Resources:
         - IpProtocol: 'tcp'
           FromPort: 22
           ToPort: 22
-          CidrIp: '0.0.0.0/0'  # En producción, restringe esto a tu IP
+          CidrIp: '0.0.0.0/0'  # En produccion, restringe esto a tu IP
       SecurityGroupEgress:
         - IpProtocol: '-1'
           CidrIp: '0.0.0.0/0'
-          Description: 'Permitir todo el tráfico saliente'
+          Description: 'Permitir todo el trafico saliente'
 
   # 9. Instancia EC2 (Free Tier eligible)
   EC2Instance:
@@ -103,7 +103,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: '/dev/xvda'
           Ebs:
-            VolumeSize: 30 # 30 GiB - máximo del Free Tier
+            VolumeSize: 30 # 30 GiB - maximo del Free Tier
             VolumeType: 'gp3' # General Purpose SSD
             DeleteOnTermination: true
       Tags:
@@ -130,4 +130,4 @@ Outputs:
     Description: 'Instrucciones para conectarse y configurar el agente'
     Value: !Sub |
       Conéctate via SSH: ssh -i ${KeyPairName}.pem ec2-user@${EC2Instance.PublicDnsName}
-      Las instrucciones completas están en /home/ec2-user/README.txt
+      Las instrucciones completas estan en /home/ec2-user/README.txt
