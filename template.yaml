@@ -78,44 +78,44 @@ Resources:
 
   # 8. Grupo de seguridad para la instancia
   InstanceSecurityGroup:
-  Type: 'AWS::EC2::SecurityGroup'
-  Properties:
-    GroupDescription: 'Security Group for Azure Pipelines Agent'
-    VpcId: !Ref VPC
-    SecurityGroupIngress:
-      # Regla 1: SSH solo desde tu IP (reemplaza con tu IP pública)
-      - IpProtocol: 'tcp'
-        FromPort: 22
-        ToPort: 22
-        CidrIp: !Ref MyIPAddress
-        Description: 'SSH access from my IP'
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Security Group for Azure Pipelines Agent'
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        # Regla 1: SSH solo desde tu IP (reemplaza con tu IP pública)
+        - IpProtocol: 'tcp'
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref MyIPAddress
+          Description: 'SSH access from my IP'
+        
+        # Regla 2: Puertos efímeros para comunicación con Azure DevOps
+        - IpProtocol: 'tcp'
+          FromPort: 1024
+          ToPort: 65535
+          CidrIp: '0.0.0.0/0'
+          Description: 'Ephemeral ports for Azure DevOps'
       
-      # Regla 2: Puertos efímeros para comunicación con Azure DevOps
-      - IpProtocol: 'tcp'
-        FromPort: 1024
-        ToPort: 65535
-        CidrIp: '0.0.0.0/0'
-        Description: 'Ephemeral ports for Azure DevOps'
-    
-    SecurityGroupEgress:
-      # Solo permitir tráfico saliente necesario
-      - IpProtocol: 'tcp'
-        FromPort: 443
-        ToPort: 443
-        CidrIp: '0.0.0.0/0'
-        Description: 'Outbound HTTPS to Azure DevOps'
-      
-      - IpProtocol: 'tcp'
-        FromPort: 80
-        ToPort: 80
-        CidrIp: '0.0.0.0/0'
-        Description: 'Outbound HTTP (for agent download)'
-      
-      - IpProtocol: 'tcp'
-        FromPort: 22
-        ToPort: 22
-        CidrIp: '0.0.0.0/0'
-        Description: 'Outbound SSH (optional for git)'
+      SecurityGroupEgress:
+        # Solo permitir tráfico saliente necesario
+        - IpProtocol: 'tcp'
+          FromPort: 443
+          ToPort: 443
+          CidrIp: '0.0.0.0/0'
+          Description: 'Outbound HTTPS to Azure DevOps'
+        
+        - IpProtocol: 'tcp'
+          FromPort: 80
+          ToPort: 80
+          CidrIp: '0.0.0.0/0'
+          Description: 'Outbound HTTP (for agent download)'
+        
+        - IpProtocol: 'tcp'
+          FromPort: 22
+          ToPort: 22
+          CidrIp: '0.0.0.0/0'
+          Description: 'Outbound SSH (optional for git)'
 
 
   # 9. Instancia EC2 (Free Tier eligible)
