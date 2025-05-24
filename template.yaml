@@ -117,6 +117,34 @@ Resources:
           CidrIp: '0.0.0.0/0'
           Description: 'Outbound SSH (optional for git)'
 
+  # 9. Rol de IAM para la instancia
+  InstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'ec2.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      PAth: '/'
+      Policies:
+        - PolicyName: 'EC2InstancePolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+  
+  # 10. Asociar el rol a la instancia
+  InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
 
   # 9. Instancia EC2 (Free Tier eligible)
   EC2Instance:
@@ -125,6 +153,7 @@ Resources:
       InstanceType: 't2.micro'
       ImageId: 'ami-0953476d60561c955'  # Amazon Linux 2023 en us-east-1
       KeyName: !Ref KeyPairName
+      IamInstanceProfile: !Ref InstanceProfile
       NetworkInterfaces:
         - AssociatePublicIpAddress: 'true'
           DeviceIndex: '0'
