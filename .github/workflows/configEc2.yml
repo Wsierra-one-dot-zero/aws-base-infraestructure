@@ -40,8 +40,8 @@ jobs:
       - name: Config EC2 Instance
         run: |
           aws ssm send-command \
-          --instance-ids "${{ github.event.inputs['stack-name']" \
-          --document-name "${{ github.event.inputs['stack-name']" \
+          --instance-ids "${{ github.event.inputs['stack-name'] }}" \
+          --document-name "${{ github.event.inputs['stack-name'] }}" \
           --parameters '{
             "AzureOrgUrl": ["https://dev.azure.com/wilmersierralinux"],
             "AzurePAT": ["${{ secrets.AZURE_PAT }}"],
